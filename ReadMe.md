@@ -14,5 +14,5 @@ This script does not focus on setting up the D-Space connection, instead it leve
 | Seaborn |
 | Threading |
 
-If you want to check some data from the Thermal Setup without connecting, take a look at (The Data Analysis Folder)[ThermalSetupControl/Data_Analysis]
+If you want to check some data from the Thermal Setup without connecting, take a look at [The Data Analysis Folder](ThermalSetupControl/Data_Analysis)
 
