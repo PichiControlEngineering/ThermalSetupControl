@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oscillating Sine Wave with Low-Pass Filter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1000px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        
+        .status {
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        
+        .status.loading {
+            color: #667eea;
+        }
+        
+        canvas {
+            display: block;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: #f9f9f9;
+            margin-bottom: 30px;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        label {
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .label-value {
+            color: #667eea;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+        }
+        
+        input[type="range"]::-moz-range-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        .filter-section {
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .btn-enable {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-enable:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-enable.active {
+            background: #10b981;
+        }
+        
+        .btn-enable.active:hover {
+            background: #059669;
+        }
+        
+        .btn-disable {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-disable:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+        }
+        
+        .filter-params {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .filter-params.show {
+            max-height: 300px;
+        }
+        
+        .filter-param-content {
+            padding-top: 10px;
+        }
+        
+        .info-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 700px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 22px;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Oscillating Sine Wave with Low-Pass Filter</h1>
+        <div class="status" id="status"></div>
+        <canvas id="canvas"></canvas>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="frequency">
+                    Frequency
+                    <span class="label-value" id="frequencyValue">1.0</span>
+                </label>
+                <input type="range" id="frequency" min="0.1" max="5" step="0.1" value="1">
+            </div>
+            
+            <div class="control-group">
+                <label for="amplitude">
+                    Amplitude
+                    <span class="label-value" id="amplitudeValue">1.0</span>
+                </label>
+                <input type="range" id="amplitude" min="0.1" max="2" step="0.1" value="1">
+            </div>
+        </div>
+        
+        <div class="filter-section">
+            <div class="filter-header">
+                <div class="filter-title">Low-Pass Filter</div>
+                <div class="filter-buttons">
+                    <button class="btn-enable" id="enableFilter">Enable</button>
+                    <button class="btn-disable" id="disableFilter">Disable</button>
+                </div>
+            </div>
+            
+            <div class="filter-params" id="filterParams">
+                <div class="filter-param-content">
+                    <div class="control-group">
+                        <label for="cutoffFrequency">
+                            Cutoff Frequency (Hz)
+                            <span class="label-value" id="cutoffValue">5.0</span>
+                        </label>
+                        <input type="range" id="cutoffFrequency" min="0.5" max="50" step="0.5" value="5">
+                        <div class="info-text">Frequencies above the cutoff are attenuated.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const frequencySlider = document.getElementById('frequency');
+        const amplitudeSlider = document.getElementById('amplitude');
+        const cutoffSlider = document.getElementById('cutoffFrequency');
+        const enableFilterBtn = document.getElementById('enableFilter');
+        const disableFilterBtn = document.getElementById('disableFilter');
+        const filterParams = document.getElementById('filterParams');
+        const statusEl = document.getElementById('status');
+        const frequencyValue = document.getElementById('frequencyValue');
+        const amplitudeValue = document.getElementById('amplitudeValue');
+        const cutoffValue = document.getElementById('cutoffValue');
+
+        let waveData = { x: [], y: [] };
+        let filterEnabled = false;
+        let isLoading = false;
+
+        // Set canvas size
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            drawWave();
+        });
+
+        // Toggle filter
+        enableFilterBtn.addEventListener('click', () => {
+            filterEnabled = true;
+            filterParams.classList.add('show');
+            enableFilterBtn.classList.add('active');
+            disableFilterBtn.classList.remove('active');
+            fetchWaveData();
+        });
+
+        disableFilterBtn.addEventListener('click', () => {
+            filterEnabled = false;
+            filterParams.classList.remove('show');
+            enableFilterBtn.classList.remove('active');
+            disableFilterBtn.classList.add('active');
+            fetchWaveData();
+        });
+
+        function updateStatus(message, isLoading = false) {
+            statusEl.textContent = message;
+            if (isLoading) {
+                statusEl.classList.add('loading');
+            } else {
+                statusEl.classList.remove('loading');
+            }
+        }
+
+        async function fetchWaveData() {
+            if (isLoading) return;
+            
+            isLoading = true;
+            updateStatus('Loading wave data...', true);
+
+            const frequency = parseFloat(frequencySlider.value);
+            const amplitude = parseFloat(amplitudeSlider.value);
+            const cutoff = parseFloat(cutoffSlider.value);
+
+            try {
+                const params = new URLSearchParams({
+                    frequency: frequency,
+                    amplitude: amplitude,
+                    use_lowpass: filterEnabled,
+                    lowpass_cutoff: cutoff,
+                    num_points: 1000
+                });
+
+                const response = await fetch(`/api/wave?${params}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                waveData = await response.json();
+                updateStatus('Wave updated', false);
+                drawWave();
+            } catch (error) {
+                console.error('Error fetching wave data:', error);
+                updateStatus(`Error: ${error.message}`, false);
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        function drawWave() {
+            // Update displayed values
+            frequencyValue.textContent = frequencySlider.value;
+            amplitudeValue.textContent = amplitudeSlider.value;
+            cutoffValue.textContent = cutoffSlider.value;
+
+            // Clear canvas
+            ctx.fillStyle = '#f9f9f9';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i <= canvas.height; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+
+            for (let i = 0; i <= canvas.width; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+
+            // Draw axes
+            ctx.strokeStyle = '#999';
+            ctx.lineWidth = 2;
+            const centerY = canvas.height / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(canvas.width, centerY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, canvas.height);
+            ctx.stroke();
+
+            // Draw sine wave
+            if (waveData.x && waveData.x.length > 0) {
+                ctx.strokeStyle = '#667eea';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+
+                const minX = Math.min(...waveData.x);
+                const maxX = Math.max(...waveData.x);
+                const minY = Math.min(...waveData.y);
+                const maxY = Math.max(...waveData.y);
+                const rangeX = maxX - minX || 1;
+                const rangeY = maxY - minY || 1;
+
+                for (let i = 0; i < waveData.x.length; i++) {
+                    const normalizedX = (waveData.x[i] - minX) / rangeX;
+                    const normalizedY = (waveData.y[i] - minY) / rangeY;
+                    const canvasX = normalizedX * canvas.width;
+                    const canvasY = canvas.height - normalizedY * (canvas.height * 0.8) - canvas.height * 0.1;
+
+                    if (i === 0) {
+                        ctx.moveTo(canvasX, canvasY);
+                    } else {
+                        ctx.lineTo(canvasX, canvasY);
+                    }
+                }
+
+                ctx.stroke();
+            }
+        }
+
+        // Event listeners for sliders
+        frequencySlider.addEventListener('input', fetchWaveData);
+        amplitudeSlider.addEventListener('input', fetchWaveData);
+        cutoffSlider.addEventListener('input', fetchWaveData);
+
+        // Initial load
+        fetchWaveData();
+    </script>
+</body>
+</html>
